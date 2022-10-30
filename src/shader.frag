@@ -2,14 +2,12 @@ uniform mat4 projectionMatrix;
 uniform float u_time;
 uniform float u_dt;
 
+uniform vec3 u_color;
+
 uniform vec2 u_normalScale;
 uniform sampler2D u_normalMap;
 
-uniform float u_metalness;
-uniform sampler2D u_metalnessMap;
-
 uniform float u_roughness;
-uniform sampler2D u_roughnessMap;
 
 uniform sampler2D u_lut;
 uniform sampler2D u_envDiffuse;
@@ -136,9 +134,8 @@ vec2 cartesianToPolar(vec3 n) {
     return uv;
 }
 
-void getIBLContribution(inout vec3 diffuse, inout vec3 specular, float NdV, float roughness, vec3 n, vec3 reflection, vec3 diffuseColor, vec3 specularColor) {
+vec3 getIBLContribution(float NdV, float roughness, vec3 reflection, vec3 specularColor) {
 	vec3 brdf = SRGBtoLinear(texture(u_lut, vec2(NdV, roughness))).rgb;
-	vec3 diffuseLight = RGBMToLinear(texture(u_envDiffuse, cartesianToPolar(n))).rgb;
 
 	// Sample 2 levels and mix between to get smoother degradation
 	float blend = roughness * ENV_LODS;
@@ -158,11 +155,10 @@ void getIBLContribution(inout vec3 diffuse, inout vec3 specular, float NdV, floa
 	vec3 specular0 = RGBMToLinear(texture(u_envSpecular, uv0)).rgb;
 	vec3 specular1 = RGBMToLinear(texture(u_envSpecular, uv1)).rgb;
 	vec3 specularLight = mix(specular0, specular1, blend);
-	diffuse = diffuseLight * diffuseColor;
 
 	// Bit of extra reflection for smooth materials
 	float reflectivity = pow((1.0 - roughness), 2.0) * 0.05;
-	specular = specularLight * (specularColor * brdf.x + brdf.y + reflectivity);
+	return specularLight * (specularColor * brdf.x + brdf.y + reflectivity);
 }
 
 void main () {
@@ -192,19 +188,14 @@ void main () {
     vec3 V = normalize(cameraPosition - v_worldPosition);
     vec3 H = normalize(L + V);
 
-	float roughnessFactor = u_roughness * texture2D(u_roughnessMap, v_uv * u_repeat).r;
+	float roughnessFactor = u_roughness;
 	float roughness = max( roughnessFactor, MIN_ROUGHNESS );
 	roughness += geometryRoughness;
 	roughness = min( roughness, 1.0 );
 
-	float metalness = u_metalness * texture2D(u_metalnessMap, v_uv * u_repeat).r;
-	
 	float anisotropy = u_anisotropyFactor * texture2D(u_anisotropyMap, v_uv * u_repeat).r;
 
-	vec3 f0 = vec3(0.04);
-	vec3 color = vec3(1.0);
-	vec3 diffuseColor = color * (vec3(1.0) - f0) * (1.0 - metalness);
-	vec3 specularColor = mix(f0, color, metalness);
+	vec3 specularColor = u_color;
 
 	vec3 specularEnvR0 = specularColor;
     vec3 specularEnvR90 = vec3(clamp(max(max(specularColor.r, specularColor.g), specularColor.b) * 25.0, 0.0, 1.0));
@@ -216,19 +207,14 @@ void main () {
 	T = normalize(T - N * dot(T, N));
 	vec3 B = normalize(cross(N, T));
 
-	vec3 diffuseDirect = diffuseColor / PI;
-	vec3 specularDirect = specularColor * BRDF_GGX_Anisotropy(anisotropy, L, V, N, specularEnvR0, specularEnvR90, roughness, T, B);
-	vec3 direct = diffuseDirect + specularDirect;
+	vec3 direct = specularColor * BRDF_GGX_Anisotropy(anisotropy, L, V, N, specularEnvR0, specularEnvR90, roughness, T, B);
 
 	vec3 bentNormal = indirectAnisotropyBentNormal(anisotropy, N, V, roughness, T, B);
 	vec3 refl = reflect(-V, bentNormal);
 	float NdV = clamp(abs(dot(N, V)), 0.001, 1.0);
     float NdL = saturate(dot(N, L));
 
-    vec3 diffuseIBL;
-    vec3 specularIBL;
-    getIBLContribution(diffuseIBL, specularIBL, NdV, roughness, N, refl, diffuseColor, specularColor);
-    vec3 indirect = diffuseIBL + specularIBL;
+    vec3 indirect = getIBLContribution(NdV, roughness, refl, specularColor);
 
 	vec3 final = (NdL * direct + indirect);
 

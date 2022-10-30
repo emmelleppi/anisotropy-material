@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useControls } from "leva";
 import { generateTangents } from "mikktspace";
-import { useTexture } from "@react-three/drei";
+import { useNormalTexture, useTexture } from "@react-three/drei";
 
 import usePostprocessing from "./usePostprocessing";
 import vertexShader from "./shader.vert";
@@ -20,11 +20,9 @@ export default function Model() {
           u_dt: { value: 0 },
           u_time: { value: 0 },
           
-          u_metalness: { value: 1 },
-          u_metalnessMap: { value: null },
+          u_color: { value: new THREE.Color("white") },
           
           u_roughness: { value: 0.5 },
-          u_roughnessMap: { value: null },
           
           u_lut: { value: null },
           u_envDiffuse: {value: null},
@@ -42,26 +40,31 @@ export default function Model() {
     []
   );
 
-  const [normalMap, lut, envDiffuse, envSpecular, anisotropyMap, anisotropyRotationMap, metalnessMap, roughnessMap] = useTexture([
-    "/normal.png",
+
+  const { roughnessFactor, normalScale, anisotropyFactor, normalId, repeat } = useControls({
+    roughnessFactor: { min: 0, max: 1, step: 0.0001, value: 0.5 },
+    anisotropyFactor: { min: 0, max: 1, step: 0.0001, value: 1 },
+    normalScale: { min: 0, max: 1, step: 0.0001, value: 0.1 },
+    normalId: { min: 1, max: 70, step: 1, value: 10 },
+    repeat: { min: 1, max: 16, step: 0.0001, value: 8 },
+  });
+
+  const [lut, envDiffuse, envSpecular, anisotropyMap, anisotropyRotationMap] = useTexture([
     "/lut.png",
     "/env_diffuse.png",
     "/env_specular.png",
     "/anisotropy.jpg",
     "/anisotropy_rotation.jpg",
-    "/metallic.jpg",
-    "/roughness.jpg",
   ])
 
   const gl = useThree(s => s.gl)
   const maxAnisotropy = gl.capabilities.getMaxAnisotropy()
+  const [normalMap] = useNormalTexture(normalId)
 
-  metalnessMap.wrapS = metalnessMap.wrapT = THREE.RepeatWrapping
-  roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping
   normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping
   anisotropyMap.wrapS = anisotropyMap.wrapT = THREE.RepeatWrapping
   anisotropyRotationMap.wrapS = anisotropyRotationMap.wrapT = THREE.RepeatWrapping
-  roughnessMap.anisotropy = metalnessMap.anisotropy = normalMap.anisotropy = anisotropyMap.anisotropy = anisotropyRotationMap.anisotropy = maxAnisotropy
+  normalMap.anisotropy = anisotropyMap.anisotropy = anisotropyRotationMap.anisotropy = maxAnisotropy
 
   lut.generateMipmaps = false;
   lut.flipY = true;
@@ -75,13 +78,6 @@ export default function Model() {
   envSpecular.flipY = true;
   envSpecular.needsUpdate = true;
 
-  const { metalnessFactor, roughnessFactor, normalScale, anisotropyFactor, repeat } = useControls({
-    metalnessFactor: { min: 0, max: 1, step: 0.0001, value: 1 },
-    roughnessFactor: { min: 0, max: 1, step: 0.0001, value: 0.5 },
-    anisotropyFactor: { min: 0, max: 1, step: 0.0001, value: 1 },
-    normalScale: { min: 0, max: 2, step: 0.0001, value: 1 },
-    repeat: { min: 1, max: 16, step: 0.0001, value: 8 },
-  });
 
   useEffect(() => {
     if (!mesh) return;
@@ -108,11 +104,7 @@ export default function Model() {
     mesh.material.uniforms.u_envDiffuse.value = envDiffuse;
     mesh.material.uniforms.u_envSpecular.value = envSpecular;
     
-    mesh.material.uniforms.u_metalness.value = metalnessFactor;
-    mesh.material.uniforms.u_metalnessMap.value = metalnessMap;
-    
     mesh.material.uniforms.u_roughness.value = roughnessFactor;
-    mesh.material.uniforms.u_roughnessMap.value = roughnessMap;
     
     mesh.material.uniforms.u_anisotropyFactor.value = anisotropyFactor;
     mesh.material.uniforms.u_anisotropyMap.value = anisotropyMap;
