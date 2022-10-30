@@ -20,7 +20,7 @@ export default function Model() {
           u_dt: { value: 0 },
           u_time: { value: 0 },
           
-          u_color: { value: new THREE.Color("white") },
+          u_color: { value: new THREE.Color("#DAA520") },
           
           u_roughness: { value: 0.5 },
           
