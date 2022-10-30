@@ -41,7 +41,8 @@ export default function Model() {
   );
 
 
-  const { roughnessFactor, normalScale, anisotropyFactor, normalId, repeat } = useControls({
+  const { color, roughnessFactor, normalScale, anisotropyFactor, normalId, repeat } = useControls({
+    color: "#DAA520",
     roughnessFactor: { min: 0, max: 1, step: 0.0001, value: 0.5 },
     anisotropyFactor: { min: 0, max: 1, step: 0.0001, value: 1 },
     normalScale: { min: 0, max: 1, step: 0.0001, value: 0.1 },
@@ -100,6 +101,7 @@ export default function Model() {
     mesh.material.uniforms.u_dt.value = dt;
     mesh.material.uniforms.u_time.value += dt;
 
+    mesh.material.uniforms.u_color.value.set(color)
     mesh.material.uniforms.u_lut.value = lut;
     mesh.material.uniforms.u_envDiffuse.value = envDiffuse;
     mesh.material.uniforms.u_envSpecular.value = envSpecular;
