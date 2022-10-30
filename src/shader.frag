@@ -50,7 +50,7 @@ vec3 inverseTransformDirection( in vec3 dir, in mat4 matrix ) {
 }
 const float MIN_ROUGHNESS = 0.0525;
 
-vec3 F_Schlick(vec3 f0, float f90, float product) {
+vec3 F_Schlick(vec3 f0, vec3 f90, float product) {
     float fresnel = exp2( ( - 5.55473 * product - 6.98316 ) * product );
     return f0 * ( 1.0 - fresnel ) + ( f90 * fresnel );
 }
@@ -88,7 +88,7 @@ vec3 indirectAnisotropyBentNormal(float anisotropy, const in vec3 normal, const 
 }
 
 //https://github.com/repalash/Open-Shaders/blob/f226a633874528ca1e7c3120512fc4a3bef3d1a6/Engines/filament/shading_model_standard.fs#L31
-vec3 BRDF_GGX_Anisotropy(float anisotropy, const in vec3 lightDir, const in vec3 viewDir, const in vec3 normal, const in vec3 f0, const in float f90, const in float roughness, const in vec3 anisotropicT, const in vec3 anisotropicB ) {
+vec3 BRDF_GGX_Anisotropy(float anisotropy, const in vec3 lightDir, const in vec3 viewDir, const in vec3 normal, const in vec3 f0, const in vec3 f90, const in float roughness, const in vec3 anisotropicT, const in vec3 anisotropicB ) {
     float alpha = pow2( roughness ); // UE4's roughness
 
     vec3 halfDir = normalize( lightDir + viewDir );
@@ -108,22 +108,15 @@ vec3 BRDF_GGX_Anisotropy(float anisotropy, const in vec3 lightDir, const in vec3
     // Anisotropic parameters: at and ab are the roughness along the tangent and bitangent
     // to simplify materials, we derive them from a single roughness parameter
     // Kulla 2017, "Revisiting Physically Based Shading at Imageworks"
-    //    float at = max(alpha * (1.0 + anisotropy), MIN_ROUGHNESS);
-    //    float ab = max(alpha * (1.0 - anisotropy), MIN_ROUGHNESS);
-
-    // slide 26, Disney 2012, "Physically Based Shading at Disney"
-    // https://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_disney_brdf_notes_v3.pdf
-    float aspect = sqrt(1.0 - min(1.-MIN_ROUGHNESS, abs(anisotropy) * 0.9));
-    if (anisotropy > 0.0) aspect = 1.0 / aspect;
-    float at = roughness * aspect;
-    float ab = roughness / aspect;
+    float at = max(alpha * (1.0 + anisotropy), MIN_ROUGHNESS);
+    float ab = max(alpha * (1.0 - anisotropy), MIN_ROUGHNESS);
 
     // specular anisotropic BRDF
     vec3 F = F_Schlick( f0, f90, dotVH );
     float V = V_GGX_SmithCorrelated_Anisotropy( at, ab, dotTV, dotBV, dotTL, dotBL, dotNV, dotNL );
     float D = D_GGX_Anisotropy( at, ab, dotTH, dotBH, dotNH );
 
-    return F * ( V * D );
+    return F * V * D;
 }
 
 vec4 SRGBtoLinear(vec4 srgb) {
@@ -209,13 +202,12 @@ void main () {
 	float anisotropy = u_anisotropyFactor * texture2D(u_anisotropyMap, v_uv * u_repeat).r;
 
 	vec3 f0 = vec3(0.04);
-	float f90 = 1.0;
 	vec3 color = vec3(1.0);
 	vec3 diffuseColor = color * (vec3(1.0) - f0) * (1.0 - metalness);
 	vec3 specularColor = mix(f0, color, metalness);
 
 	vec3 specularEnvR0 = specularColor;
-	vec3 specularEnvR90 = vec3(1.0);
+    vec3 specularEnvR90 = vec3(clamp(max(max(specularColor.r, specularColor.g), specularColor.b) * 25.0, 0.0, 1.0));
 
 	float rot = (RGBMToLinear(texture2D(u_anisotropyRotationMap, v_uv * u_repeat)).r);
 	rot = rot * 2.0 * PI;
@@ -225,10 +217,10 @@ void main () {
 	vec3 B = normalize(cross(N, T));
 
 	vec3 diffuseDirect = diffuseColor / PI;
-	vec3 specularDirect = specularColor * BRDF_GGX_Anisotropy(anisotropy, L, V, N, f0, f90, roughness, T, B);
+	vec3 specularDirect = specularColor * BRDF_GGX_Anisotropy(anisotropy, L, V, N, specularEnvR0, specularEnvR90, roughness, T, B);
 	vec3 direct = diffuseDirect + specularDirect;
 
-	vec3 bentNormal = indirectAnisotropyBentNormal(anisotropy,N, V, roughness, T, B);
+	vec3 bentNormal = indirectAnisotropyBentNormal(anisotropy, N, V, roughness, T, B);
 	vec3 refl = reflect(-V, bentNormal);
 	float NdV = clamp(abs(dot(N, V)), 0.001, 1.0);
     float NdL = saturate(dot(N, L));
@@ -240,6 +232,6 @@ void main () {
 
 	vec3 final = (NdL * direct + indirect);
 
-	gl_FragColor = vec4(final, 1.0);
+	gl_FragColor = vec4(vec3(final), 1.0);
 
 }
