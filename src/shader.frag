@@ -7,6 +7,8 @@ uniform vec3 u_color;
 uniform vec2 u_normalScale;
 uniform sampler2D u_normalMap;
 
+uniform sampler2D u_cymbalMap;
+
 uniform float u_roughness;
 
 uniform sampler2D u_lut;
@@ -25,6 +27,8 @@ varying vec2 v_uv;
 varying vec3 v_normal;
 varying vec3 v_tangent;
 varying vec3 v_bitangent;
+varying float v_bell;
+varying float v_hammering;
 
 #define PI 3.141592653589793
 #define PI2 6.283185307179586
@@ -180,7 +184,7 @@ void main () {
 	mat3 TBN = mat3( tangent, bitangent, normal );
 
 	vec3 mapN = texture2D( u_normalMap, v_uv * u_repeat ).xyz * 2.0 - 1.0;
-	mapN.xy *= u_normalScale;
+	mapN.xy *= u_normalScale * v_hammering;
 	normal = normalize( TBN * mapN );
 
 	vec3 N = inverseTransformDirection( normal, viewMatrix );
@@ -193,14 +197,14 @@ void main () {
 	roughness += geometryRoughness;
 	roughness = min( roughness, 1.0 );
 
-	float anisotropy = u_anisotropyFactor * texture2D(u_anisotropyMap, v_uv * u_repeat).r;
+	float anisotropy = v_bell * u_anisotropyFactor * texture2D(u_anisotropyMap, v_uv).r;
 
 	vec3 specularColor = u_color;
 
 	vec3 specularEnvR0 = specularColor;
     vec3 specularEnvR90 = vec3(clamp(max(max(specularColor.r, specularColor.g), specularColor.b) * 25.0, 0.0, 1.0));
 
-	float rot = (RGBMToLinear(texture2D(u_anisotropyRotationMap, v_uv * u_repeat)).r);
+	float rot = (RGBMToLinear(texture2D(u_anisotropyRotationMap, v_uv)).r);
 	rot = rot * 2.0 * PI;
 
 	vec3 T = (tangent * sin(rot) + bitangent * cos(rot));
@@ -219,5 +223,4 @@ void main () {
 	vec3 final = (NdL * direct + indirect);
 
 	gl_FragColor = vec4(vec3(final), 1.0);
-
 }
