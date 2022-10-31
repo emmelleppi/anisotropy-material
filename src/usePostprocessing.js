@@ -9,12 +9,12 @@ import {
   BloomEffect,
 } from "postprocessing";
 
-
+const _v = new THREE.Vector3()
 
 function usePostprocessing(roughness) {
   const { gl, scene, size, camera } = useThree();
 
-  const [composer, bloomEfx] = useMemo(() => {
+  const [composer, bloomEfx, dofEfx] = useMemo(() => {
     const composer = new EffectComposer(gl, {
       frameBufferType: THREE.HalfFloatType,
       multisampling: 4
@@ -22,16 +22,17 @@ function usePostprocessing(roughness) {
     const renderPass = new RenderPass(scene, camera);
 
     const DOF = new DepthOfFieldEffect(camera, {
-      worldFocusDistance: 2,
-      worldFocusRange: 0.5,
-      bokehScale: 1
+      worldFocusRange: 0.8,
+      bokehScale: 2,
+      resolutionX: 1024,
+      resolutionY: 1024,
     });
     const BLOOM = new BloomEffect();
 
     composer.addPass(renderPass);
     composer.addPass(new EffectPass(camera, DOF, BLOOM));
 
-    return [composer, BLOOM];
+    return [composer, BLOOM, DOF];
   }, [gl, scene, camera]);
 
   useEffect(() => void composer.setSize(size.width, size.height), [
@@ -55,6 +56,9 @@ function usePostprocessing(roughness) {
     bloomEfx.intensity = bloomIntensity;
     bloomEfx.luminanceMaterial.threshold = bloomThreshold;
     bloomEfx.luminanceMaterial.smoothing = bloomSmoothing;
+
+    const dist = Math.abs(camera.position.z)
+    dofEfx.cocMaterial.worldFocusDistance = dist
   }, 1);
 }
 
