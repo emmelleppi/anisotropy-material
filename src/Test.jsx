@@ -39,7 +39,7 @@ export default function Model() {
           u_dt: { value: 0 },
           u_time: { value: 0 },
           
-          u_color: { value: new THREE.Color("#DAA520") },
+          u_color: { value: new THREE.Color() },
           
           u_roughness: { value: 0.5 },
           
