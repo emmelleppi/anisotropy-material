@@ -31,7 +31,8 @@ void main () {
 	vec4 mvPosition = modelViewMatrix * transformed;
 	gl_Position = projectionMatrix * mvPosition;
 
-	vec3 transformedNormal = normalMatrix * vec3((cymbal.xy - 0.5) * 2.0, 1.0);
+	vec3 normal = vec3((cymbal.xy - 0.5) * 1.0, 1.0);
+	vec3 transformedNormal = normalMatrix * normalize(normal);
 	#ifdef FLIP_SIDED
 		transformedNormal = - transformedNormal;
 	#endif
