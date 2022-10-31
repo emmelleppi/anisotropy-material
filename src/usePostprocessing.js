@@ -22,9 +22,9 @@ function usePostprocessing(roughness) {
     const renderPass = new RenderPass(scene, camera);
 
     const DOF = new DepthOfFieldEffect(camera, {
-      worldFocusDistance: 1.5,
-      worldFocusRange: 1.5,
-      bokehScale: 2
+      worldFocusDistance: 2,
+      worldFocusRange: 0.5,
+      bokehScale: 1
     });
     const BLOOM = new BloomEffect();
 
