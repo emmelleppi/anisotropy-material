@@ -204,7 +204,7 @@ void main () {
 
 	float anisotropy = v_bell * u_anisotropyFactor * texture2D(u_anisotropyMap, v_uv).r;
 
-    float logo = (1.0 - texture2D(u_logo, (vec2(v_uv.x - 0.42,  2.0 * v_uv.y - 1.67) * 6.0)).a);
+    float logo = (1.0 - texture2D(u_logo, (vec2((gl_FrontFacing ? 0.0 : 1.0) + faceDirection * v_uv.x - 0.42,  2.0 * v_uv.y - 1.67) * 6.0)).a);
 	vec3 specularColor = u_color * logo;
 
 	vec3 specularEnvR0 = specularColor;
