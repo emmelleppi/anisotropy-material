@@ -7,6 +7,7 @@ varying vec3 v_tangent;
 varying vec3 v_bitangent;
 varying float v_bell;
 varying float v_hammering;
+varying float v_fogDepth;
 
 uniform sampler2D u_cymbalMap;
 uniform float u_bell;
@@ -47,9 +48,9 @@ void main () {
 	v_normal = normalize( transformedNormal );
 	v_tangent = normalize( transformedTangent );
 	v_bitangent = normalize( cross( v_normal, v_tangent ) * tangent.w );
+	v_fogDepth = - mvPosition.z;
 	v_bell = isBell ? pow(1.0 - 0.8 * cymbal.b, 2.0) : 1.0;
 
-	// v_hammering = isBell ? pow(1.0 - cymbal.b, 8.0) : 0.0;
 	v_hammering = isBell ? smoothstep(-0.5, 0.5, cymbal.b) : 0.0;
 	v_hammering += isBell ? 0.0 : smoothstep(0.1, 0.0, pow(1.0 - cymbal.b, 8.0));
 	v_hammering = 1.0 - v_hammering;

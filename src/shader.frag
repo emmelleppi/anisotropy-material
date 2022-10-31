@@ -29,6 +29,7 @@ varying vec3 v_tangent;
 varying vec3 v_bitangent;
 varying float v_bell;
 varying float v_hammering;
+varying float v_fogDepth;
 
 #define PI 3.141592653589793
 #define PI2 6.283185307179586
@@ -228,4 +229,8 @@ void main () {
 	vec3 final = (NdL * direct + indirect);
 
 	gl_FragColor = vec4(mix(final, linearToSRGB(final), logo), 1.0);
+
+    float fogDensity = 0.25;
+    float fogFactor = 1.0 - exp( - fogDensity * fogDensity * v_fogDepth * v_fogDepth );
+	gl_FragColor.rgb = mix( gl_FragColor.rgb, vec3(1.0/255.0), fogFactor );
 }
