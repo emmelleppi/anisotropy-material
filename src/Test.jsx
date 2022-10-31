@@ -74,9 +74,9 @@ export default function Model() {
     normalId: {label:"Normal Texture", min: 1, max: 70, step: 1, value: 50 },
     normalScale: {label:"Normal Scale", min: 0, max: 1, step: 0.0001, value: 0.5 },
     repeat: {label:"Normal Repeat", min: 1, max: 16, step: 0.0001, value: 6 },
-    bellSize: {label:"Bell width", min: 0.15, max: 0.4, step: 0.0001, value: 0.25 },
-    bell: {label:"Bell size", min: 0, max: MAX_BELL, step: 0.0001, value: MAX_BELL * 0.7 },
-    body: {label:"Body size", min: 0, max: MAX_BODY, step: 0.0001, value: MAX_BODY * 0.5 },
+    bellSize: {label:"Bell Width", min: 0.15, max: 0.4, step: 0.0001, value: 0.25 },
+    bell: {label:"Bell Depth", min: 0, max: MAX_BELL, step: 0.0001, value: MAX_BELL * 0.7 },
+    body: {label:"Body Depth", min: 0, max: MAX_BODY, step: 0.0001, value: MAX_BODY * 0.5 },
   });
 
   useEffect(() => {
