@@ -210,7 +210,7 @@ void main () {
     vec3 specularEnvR90 = vec3(clamp(max(max(specularColor.r, specularColor.g), specularColor.b) * 25.0, 0.0, 1.0));
 
 	float rot = (RGBMToLinear(texture2D(u_anisotropyRotationMap, v_uv)).r);
-	rot = rot * 2.0 * PI;
+	rot = rot * 1.0 * PI;
 
 	vec3 T = (tangent * sin(rot) + bitangent * cos(rot));
 	T = normalize(T - N * dot(T, N));
