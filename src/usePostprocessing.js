@@ -10,14 +10,9 @@ import {
   SMAAEffect
 } from "postprocessing";
 
-const bloomResolution = 360;
-const bloomKernelSize = 2;
-const bloomBlurScale = 1;
-const bloomIntensity = 0.5;
-const bloomThreshold = 0.9;
-const bloomSmoothing = 0.3;
 
-function usePostprocessing() {
+
+function usePostprocessing(roughness) {
   const { gl, scene, size, camera } = useThree();
   const smaa = useLoader(SMAAImageLoader);
 
@@ -46,6 +41,13 @@ function usePostprocessing() {
 
   useFrame((_, delta) => {
     composer.render(delta);
+
+    const bloomResolution = 360;
+    const bloomKernelSize = 2;
+    const bloomBlurScale = 1;
+    const bloomIntensity = 0.3 + (1 - roughness);
+    const bloomThreshold = 0.9;// - 0.5 * roughness;
+    const bloomSmoothing = 0.1;// - 0.2 * roughness;;
 
     bloomEfx.resolution.height = bloomResolution;
     bloomEfx.blurPass.kernelSize = bloomKernelSize;

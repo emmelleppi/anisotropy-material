@@ -23,8 +23,6 @@ const _v3_2 = new THREE.Vector3()
 
 
 export default function Model() {
-  usePostprocessing();
-
   const [mesh, setMesh] = useState();
   
   const [cymbalTexture, ctx, imageData] = useState(() => {
@@ -50,6 +48,7 @@ export default function Model() {
           u_envSpecular: {value: null},
           
           u_cymbalMap: { value: null },
+          u_logo: { value: null },
           
           u_normalMap: { value: null },
           u_normalScale: { value: new THREE.Vector2(1, 1) },
@@ -67,17 +66,19 @@ export default function Model() {
   );
 
   const { color, size, roughnessFactor, normalScale, anisotropyFactor, normalId, repeat, bellSize, bell, body } = useControls({
-    color:{label: "Color",value: "#ffbd59"},
+    color:{label: "Color",value: "#ffb74b"},
     size:{ label: "Size", min: 8, max: 24, step: 1, value: 18},
-    roughnessFactor: {label:"Roughness", min: 0, max: 1, step: 0.0001, value: 0.5 },
-    anisotropyFactor: {label:"Anisotropy", min: 0, max: 1, step: 0.0001, value: 0.5 },
-    normalId: {label:"Normal Texture", min: 1, max: 70, step: 1, value: 50 },
-    normalScale: {label:"Normal Scale", min: 0, max: 1, step: 0.0001, value: 0.5 },
-    repeat: {label:"Normal Repeat", min: 1, max: 16, step: 0.0001, value: 6 },
+    roughnessFactor: {label:"Brilliant", min: 0, max: 1, step: 0.0001, value: 0.5 },
+    anisotropyFactor: {label:"Opacity", min: 0, max: 1, step: 0.0001, value: 0.5 },
+    normalId: {label:"Hammering Texture", min: 1, max: 70, step: 1, value: 50 },
+    normalScale: {label:"Hammering Intensity", min: 0, max: 1, step: 0.0001, value: 0.5 },
+    repeat: {label:"Hammering Density", min: 1, max: 16, step: 0.0001, value: 6 },
     bellSize: {label:"Bell Width", min: 0.15, max: 0.4, step: 0.0001, value: 0.25 },
     bell: {label:"Bell Depth", min: 0, max: MAX_BELL, step: 0.0001, value: MAX_BELL * 0.7 },
     body: {label:"Body Depth", min: 0, max: MAX_BODY, step: 0.0001, value: MAX_BODY * 0.5 },
   });
+
+  usePostprocessing(roughnessFactor);
 
   useEffect(() => {
     let index = 0
@@ -133,12 +134,13 @@ export default function Model() {
     cymbalTexture.needsUpdate = true
   }, [bell, body, bellSize])
 
-  const [lut, envDiffuse, envSpecular, anisotropyMap, anisotropyRotationMap] = useTexture([
+  const [lut, envDiffuse, envSpecular, anisotropyMap, anisotropyRotationMap, logo] = useTexture([
     "/lut.png",
     "/env_diffuse.png",
     "/env_specular.png",
     "/anisotropy.jpg",
     "/anisotropy_rotation.jpg",
+    "/logo.png",
   ])
 
   const gl = useThree(s => s.gl)
@@ -189,10 +191,10 @@ export default function Model() {
     mesh.material.uniforms.u_envDiffuse.value = envDiffuse;
     mesh.material.uniforms.u_envSpecular.value = envSpecular;
     
-    mesh.material.uniforms.u_roughness.value = roughnessFactor;
+    mesh.material.uniforms.u_roughness.value = 1 - roughnessFactor;
     
     
-    mesh.material.uniforms.u_anisotropyFactor.value = anisotropyFactor;
+    mesh.material.uniforms.u_anisotropyFactor.value = 1-anisotropyFactor;
     mesh.material.uniforms.u_anisotropyMap.value = anisotropyMap;
     mesh.material.uniforms.u_anisotropyRotationMap.value = anisotropyRotationMap;
     
@@ -202,6 +204,7 @@ export default function Model() {
     mesh.material.uniforms.u_repeat.value.setScalar(repeat * size / 20);
     
     mesh.material.uniforms.u_cymbalMap.value = cymbalTexture
+    mesh.material.uniforms.u_logo.value = logo
   });
 
   return (

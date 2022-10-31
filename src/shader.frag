@@ -7,7 +7,7 @@ uniform vec3 u_color;
 uniform vec2 u_normalScale;
 uniform sampler2D u_normalMap;
 
-uniform sampler2D u_cymbalMap;
+uniform sampler2D u_logo;
 
 uniform float u_roughness;
 
@@ -131,6 +131,10 @@ vec4 RGBMToLinear(in vec4 value) {
     return vec4(value.xyz * value.w * maxRange, 1.0);
 }
 
+vec3 linearToSRGB(vec3 color) {
+    return pow(color, vec3(1.0 / 2.2));
+}
+
 vec2 cartesianToPolar(vec3 n) {
     vec2 uv;
     uv.x = atan(n.z, n.x) * RECIPROCAL_PI2 + 0.5;
@@ -199,7 +203,8 @@ void main () {
 
 	float anisotropy = v_bell * u_anisotropyFactor * texture2D(u_anisotropyMap, v_uv).r;
 
-	vec3 specularColor = u_color;
+    float logo = (1.0 - texture2D(u_logo, (vec2(v_uv.x - 0.42,  2.0 * v_uv.y - 1.67) * 6.0)).a);
+	vec3 specularColor = u_color * logo;
 
 	vec3 specularEnvR0 = specularColor;
     vec3 specularEnvR90 = vec3(clamp(max(max(specularColor.r, specularColor.g), specularColor.b) * 25.0, 0.0, 1.0));
@@ -222,5 +227,5 @@ void main () {
 
 	vec3 final = (NdL * direct + indirect);
 
-	gl_FragColor = vec4(vec3(final), 1.0);
+	gl_FragColor = vec4(mix(final, linearToSRGB(final), logo), 1.0);
 }
